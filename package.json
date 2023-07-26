@@ -1,0 +1,16 @@
+{
+  "name": "lzyutils",
+  "version": "1.0.0",
+  "description": "一些常用方法的js库",
+  "main": "index.js",
+  "homepage": "https://github.com/lzyszds/lzyutils.git",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "lzyszds",
+  "license": "ISC",
+  "dependencies": {
+    "@vueuse/core": "^10.2.1",
+    "element-plus": "^2.3.8"
+  }
+}
