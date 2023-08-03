@@ -22,32 +22,44 @@ export function timeAgo(time) {
   let y = m * 12
   const mp = new Map([
     // n是时间戳（key），t是当前时间戳 ,>>0 是向下取整
-    [
-      n => n < i,
-      () => '一分钟'
-    ],
-    [
-      n => n < h,
-      n => (n / i >> 0) + '分钟'
-    ],
-    [
-      n => n < d,
-      n => (n / h >> 0) + '小时'
-    ],
-    [
-      n => n < m,
-      n => (n / d >> 0) + '天'
-    ],
-    [
-      n => n < y,
-      n => (n / m >> 0) + '月'
-    ],
+    [n => n<i, () => '一分钟'],
+    [n => n<h, n =>(n / i >> 0) + '分钟'],
+    [n => n<d, n =>(n / h >> 0) + '小时'],
+    [n => n<m, n =>(n / d >> 0) + '天'],
+    [n => n<y, n =>(n / m >> 0) + '月'],
     [
       () => true,
       n => (n / y >> 0) + '年'
     ],
   ])
   return([... mp].find(([n]) => n(t)).pop())(t) + '前'
+}
+
+
+// 视频音频时间  格式化时间
+/* 视频或音频的时长转化为标准化的xx:xx:xx格式 */
+export function formatDuraton(time) {
+  if (time > -1) {
+    var hour = Math.floor(time / 3600);
+    var min = Math.floor(time / 60) % 60;
+    var sec = time % 60;
+    if (hour < 10) {
+      time = '0' + hour + ":";
+    } else {
+      time = hour + ":";
+    }
+
+    if (min < 10) {
+      time += "0";
+    }
+    time += min + ":";
+
+    if (sec < 10) {
+      time += "0";
+    }
+    time += sec;
+  }
+  return time;
 }
 
 
@@ -72,7 +84,6 @@ export function getBase64(data, type) {
     reader.onerror = (error) => reject(error);
   });
 }
-
 
 
 // 上传图片，图片太大，如何在前端实现图片压缩后上传
@@ -189,6 +200,7 @@ export const setTime = (time) => {
 export default {
   splitArray, // 把一个数组拆分成几个数组
   timeAgo, // 时间转换
+  formatDuraton,
   base64toBlob, // base64转二进制流
   getBase64, // 二进制流转换为base64 格式。
   compressPic, // 上传图片，图片太大，如何在前端实现图片压缩后上传
