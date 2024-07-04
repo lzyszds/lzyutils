@@ -1,4 +1,6 @@
-import {ElNotification, dayjs} from 'element-plus'
+import { ElNotification, dayjs } from 'element-plus'
+import { formatFileSize, fileSizeToBytes, compressPic, getResourceFiles, getFileExtension } from './handleFile.js'
+
 
 
 // 此函数获取一个数组并将其拆分为更小的块
@@ -14,6 +16,10 @@ export function splitArray(array, size) { // 创建一个空数组以容纳较�
 
 // 时间格式化为字符串 比如说前天 几天前，几小时前
 export function timeAgo(time) {
+  //识别time 的时间戳长度，如果长度为10，说明是秒级时间戳，转为毫秒级时间戳
+  if (time.toString().length === 10) {
+    time *= 1000;
+  }
   const t = dayjs().unix() - time; // 获取当前时间戳与传入时间戳的差值
   const i = 60;
   const h = i * 60;
@@ -22,18 +28,18 @@ export function timeAgo(time) {
   const y = m * 12;
   // 使用 Map 存储时间转换的规则，每个规则由一个判断函数和一个转换函数组成
   const timeRules = new Map([
-    [n => n<i, () => '一分钟'],
-    [n => n<h, n =>(n / i >> 0) + '分钟'],
-    [n => n<d, n =>(n / h >> 0) + '小时'],
-    [n => n<m, n =>(n / d >> 0) + '天'],
-    [n => n<y, n =>(n / m >> 0) + '月'],
+    [n => n < i, () => '一分钟'],
+    [n => n < h, n => (n / i >> 0) + '分钟'],
+    [n => n < d, n => (n / h >> 0) + '小时'],
+    [n => n < m, n => (n / d >> 0) + '天'],
+    [n => n < y, n => (n / m >> 0) + '月'],
     [
       () => true,
       n => (n / y >> 0) + '年'
     ],
   ]);
   // 通过遍历 Map 找到符合条件的规则并执行转换函数，获取时间描述字符串
-  return [... timeRules].find(([n]) => n(t)).pop()(t) + '前';
+  return [...timeRules].find(([n]) => n(t)).pop()(t) + '前';
 }
 
 
@@ -53,65 +59,6 @@ export function formatDuration(time) {
 
 
 /**
- * 将文件大小（以字节为单位）格式化为可读的字符串格式，例如：'1.25 MB'
- * @param {number} fileSize - 文件大小，以字节为单位
- * @returns {string} - 格式化后的文件大小字符串
- */
-export function formatFileSize(fileSize) {
-
-  const units = [
-    'B',
-    'KB',
-    'MB',
-    'GB',
-    'TB'
-  ];
-  let index = 0;
-
-  while (fileSize >= 1024 && index < units.length - 1) {
-    fileSize /= 1024;
-    index++;
-  }
-
-  return fileSize.toFixed(2) + units[index];
-}
-
-
-/**
- * 将文件大小字符串（带单位，不区分大小写）转换为字节数
- * @param {string} fileSizeStr - 文件大小字符串，例如：'2.5 MB'
- * @returns {number} - 文件大小对应的字节数
- * @throws {Error} - 如果输入的文件大小字符串格式不正确或单位无效，将抛出错误
- */
-
-export function fileSizeToBytes(fileSizeStr) {
-  const units = {
-    'B': 1,
-    'KB': 1024,
-    'MB': 1024 * 1024,
-    'GB': 1024 * 1024 * 1024,
-    'TB': 1024 * 1024 * 1024 * 1024
-  };
-
-  const regex = /^([\d.]+)\s*(B|KB|MB|GB|TB)$/i; // 添加 i 标志，使正则匹配不区分大小写
-  const match = fileSizeStr.match(regex);
-
-  if (! match) {
-    throw new Error('Invalid file size format. Must be a string with a number and a unit (B, KB, MB, GB, TB).');
-  }
-
-  const num = parseFloat(match[1]);
-  const unit = match[2].toUpperCase(); // 将单位转换为大写形式
-
-  if (! units.hasOwnProperty(unit)) {
-    throw new Error('Invalid file size unit. Must be one of B, KB, MB, GB, TB.');
-  }
-
-  return num * units[unit];
-}
-
-
-/**
  * 将 base64 字符串转换为二进制流(Blob)对象
  * @param {string} dataurl - base64 字符串
  * @returns {Blob} - 转换后的二进制流(Blob)对象
@@ -125,7 +72,7 @@ export function base64toBlob(dataurl) {
   for (let i = 0; i < n; i++) {
     u8arr[i] = bstr.charCodeAt(i); // 将解码后的二进制数据存储为 Uint8Array
   }
-  return new Blob([u8arr], {type: mime}); // 创建 Blob 对象并返回
+  return new Blob([u8arr], { type: mime }); // 创建 Blob 对象并返回
 }
 
 /**
@@ -136,41 +83,13 @@ export function base64toBlob(dataurl) {
  */
 export function getBase64(data, type) {
   return new Promise((resolve, reject) => {
-    const blob = new Blob([data], {type});
+    const blob = new Blob([data], { type });
     const reader = new FileReader();
     reader.readAsDataURL(blob); // 将 Blob 对象读取为 base64 字符串
     reader.onload = () => resolve(reader.result); // 读取成功时解析 base64 字符串结果
     reader.onerror = reject; // 读取错误时拒绝错误
   });
 }
-
-
-// 上传图片，图片太大，如何在前端实现图片压缩后上传
-export function compressPic(file, quality) {
-  return new Promise((resolve, reject) => {
-    getBase64(file, file.type).then((res) => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-      img.src = res;
-      img.onload = function () {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        // 转换成base64格式 quality为图片压缩质量 0-1之间  值越小压缩的越大 图片质量越差
-        const base64 = canvas.toDataURL(file.type, quality);
-        const fileCompress = base64toBlob(base64);
-        resolve({base64, fileCompress});
-      };
-      img.onerror = function (error) {
-        reject("压缩失败：" + error.message);
-      };
-    }).catch((error) => {
-      reject("获取图片数据失败：" + error.message);
-    });
-  });
-}
-
 
 // 默认弹窗
 export const LNotification = (val, time = 2000, postion = 'bottom-right') => {
@@ -185,7 +104,7 @@ export const LNotification = (val, time = 2000, postion = 'bottom-right') => {
 }
 
 // 复制内容提示版权信息
-import {useEventListener} from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 
 export const copyTip = () => {
   useEventListener(window, 'keydown', e => {
@@ -225,34 +144,9 @@ export const unique = (arr, key) => {
   return arr.filter((a) => {
     const arrKey = key ? a[key] : a
     // has判断当前值是否在map对象中存在 ,如果不存在则将当前值添加进map对象中
-    return ! res.has(arrKey) && res.set(arrKey, 1)
+    return !res.has(arrKey) && res.set(arrKey, 1)
   })
 }
-
-
-// 数组对象去重
-// function unique(arr, key) {
-// const res = new Map();
-// return arr.filter((a) => {
-//     // has判断当前值是否在map对象中存在 ,如果不存在则将当前值添加进map对象中
-//     return !res.has(a[key]) && res.set(a[key], 1)
-// })
-// }
-// //去重data
-// const _res = new Map();
-// const items = data.map((item, index) => _res.set(item.url, index))
-// let newdata = [..._res.values()].map(index => {
-// return data[index]
-// })
-// const newArr = [...new Set(arr)]
-// //去重data 使用map对象
-// const map = new Map();
-// for (const item of data) {
-// if (!map.has(item.url)) {
-//     map.set(item.url, item);
-// }
-// }
-// const result = [...map.values()];
 
 // 时间格式化处理
 export const setTime = (time) => {
@@ -260,16 +154,83 @@ export const setTime = (time) => {
   return formatted
 }
 
+// 延迟执行
+export const speeding = (timer) => {
+  return new Promise((resolve, reject) => {
+    try {
+      timer = typeof timer === 'string' ? parseInt(timer) : timer
+    } catch (e) {
+      reject('时间格式错误，请输入数字')
+    }
+    setTimeout(() => {
+      resolve(true)
+    }, timer)
+  });
+}
+
+/* 数字滚动
+  * num: 数字对象 响应式数据，vue3.0 ref
+  * sum: 数字总数
+  * 数字跳动 （num: 数字对象，sum: 数字总和）
+*/
+export const numberJump = (num, sum) => {
+  let timer = [];
+  for (const key in num) {
+    num[key].value = 0;
+    timer[key] = setInterval(() => {
+      //去除小数点
+      num[key].value += Math.ceil(sum[key] / 10);
+
+      if (num[key].value >= sum[key]) {
+        num[key].value = sum[key];
+        clearInterval(timer[key]);
+      }
+    }, 60);
+  }
+}
+
+
+/**
+ * 创建一个具有防抖功能的自定义 Vue 响应式引用。
+ * @example
+ * // 创建一个具有防抖功能的响应式引用，延迟时间为 500 毫秒
+ * const debouncedValue = debounceRef('', 500); 用法跟ref一样只是后面多了一个时间
+ * // 获取引用值
+ * const currentValue = debouncedValue.value;
+ * // 更新引用值（在 500 毫秒内不会触发更新，直到延迟结束）
+ * debouncedValue.value = newValue;
+ */
+import { customRef } from 'vue'
+export function debounceRef(value, duration = 1000) {
+  let timer
+  return customRef((track, trigger) => {
+    return {
+      get() {
+        track();
+        return value;
+      },
+      set(val) {
+        timer.clearTimeout();
+        timer = setTimeout(() => {
+          trigger()
+          value = val
+        }, duration)
+      }
+    }
+  })
+}
+
+//生成随机数
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 export default {
   splitArray, // 把一个数组拆分成几个数组
   timeAgo, // 时间转换
   formatDuration, // 视频音频时间  格式化时间
-  formatFileSize, // 转换文件大小
-  fileSizeToBytes, // 将文件大小字符串转换为字节数
   base64toBlob, // base64转二进制流
   getBase64, // 二进制流转换为base64 格式。
-  compressPic, // 上传图片，图片太大，如何在前端实现图片压缩后上传
   copyTip, // 复制内容提示版权信息
   tipNotify, // 提示通知
   LNotification, // 提示弹窗
@@ -277,4 +238,17 @@ export default {
   setCookie, // 设置cookie
   unique, // 数组对象去重（区别单数组以及数组中嵌套一层对象）
   setTime, // 时间格式化处理
+  speeding, // 延迟执行
+  numberJump, // 数字滚动
+  debounceRef, // 一个具有防抖功能的自定义 Vue 响应式引用
+  getRandomInt, // 生成随机数
+
+
+
+  /* 文件函数处理集合 */
+  formatFileSize, // 转换文件大小
+  fileSizeToBytes, // 将文件大小字符串转换为字节数
+  compressPic, // 上传图片，图片太大，如何在前端实现图片压缩后上传
+  getResourceFiles, // 获取文件夹下资源文件(指定类型)
+  getFileExtension, // 获取文件扩展名
 }
