@@ -1,6 +1,6 @@
 import { ElNotification, dayjs } from 'element-plus'
 import { formatFileSize, fileSizeToBytes, compressPic, getResourceFiles, getFileExtension } from './handleFile.js'
-
+import handleString from './handleString.js';
 
 
 // 此函数获取一个数组并将其拆分为更小的块
@@ -221,9 +221,62 @@ export function debounceRef(value, duration = 1000) {
 }
 
 //生成随机数
-function getRandomInt(min, max) {
+export function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
+
+// 简单的本地存储封装
+export const storage = {
+  set: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
+  get: (key) => JSON.parse(localStorage.getItem(key)),
+  remove: (key) => localStorage.removeItem(key),
+  clear: () => localStorage.clear()
+};
+
+// 检查对象是否包含某个属性（包括原型链）
+export function hasProperty(obj, prop) {
+  return prop in obj;
+}
+
+/**
+ * memoize 是一种优化技术，用于缓存函数的计算结果。它的主要目的是提高函数的执行效率，
+ * 特别是对于计算量大或者频繁调用的函数。工作原理：
+ * 当函数第一次使用特定参数被调用时，memoize 会计算结果并将其存储在缓存中。
+ * 如果之后使用相同的参数再次调用该函数，memoize 会直接返回缓存的结果，而不是重新计算。
+ * 使用场景：计算斐波那契数列 、递归函数优化、API 调用结果缓存
+ */
+export function memoize(fn) {
+  const cache = new Map();
+  return function (...args) {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    const result = fn.apply(this, args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+/**
+ * 深拷贝对象
+ * @param {Object} obj - 要拷贝的对象
+*/
+export function deepCopyObject(obj) {
+  if (typeof obj !== 'object' || obj === null) {
+    return obj;
+  }
+
+  const newObj = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      newObj[key] = deepCopyObject(obj[key]);
+    }
+  }
+  return newObj;
+}
+
 
 export default {
   splitArray, // 把一个数组拆分成几个数组
@@ -242,8 +295,10 @@ export default {
   numberJump, // 数字滚动
   debounceRef, // 一个具有防抖功能的自定义 Vue 响应式引用
   getRandomInt, // 生成随机数
-
-
+  storage, // 简单的本地存储封装
+  hasProperty, // 检查对象是否包含某个属性（包括原型链）
+  memoize, // 实现简单的 memoize 函数
+  deepCopyObject, // 深拷贝对象
 
   /* 文件函数处理集合 */
   formatFileSize, // 转换文件大小
@@ -251,4 +306,7 @@ export default {
   compressPic, // 上传图片，图片太大，如何在前端实现图片压缩后上传
   getResourceFiles, // 获取文件夹下资源文件(指定类型)
   getFileExtension, // 获取文件扩展名
+
+  /* 字符串处理集合 */
+  handleString, // 字符串处理
 }
