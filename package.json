@@ -1,6 +1,6 @@
 {
   "name": "lzyutils",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "一些常用方法的js库",
   "main": "index.js",
   "homepage": "https://github.com/lzyszds/lzyutils.git",
