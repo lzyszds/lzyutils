@@ -117,3 +117,30 @@ export function compressPic(file, quality) {
     });
   });
 }
+
+// 图片加载器 将图像对象在初始化时加载，并在后续渲染时重复使用。
+class ImageLoader {
+  // 创建一个私有属性 imageCache，用于存储图像 URL 与图像对象的映射关系
+  imageCache = new Map();
+  // 异步方法，用于加载图像并缓存
+  async loadImage(src) {
+    console.log(this.imageCache); // 打印当前图像缓存，用于调试和观察
+    // 如果 imageCache 中已经有了这个 URL 对应的图像对象，直接返回已缓存的对象
+    if (this.imageCache.has(src)) {
+      return this.imageCache.get(src);
+    } else {
+      // 创建一个新的 HTMLImageElement 对象
+      const img = new Image();
+      // 设置图像的 URL 为传入的 src
+      img.src = src;
+      // 等待图像加载和解码完成
+      await img.decode();
+      // 将图像对象缓存到 imageCache 中，以便下次使用
+      this.imageCache.set(src, img);
+      // 返回加载好的图像对象
+      return img;
+    }
+  }
+}
+// 创建一个名为 imageLoader 的 ImageLoader 类的实例，用于加载和缓存图像
+export const imageLoader = new ImageLoader();

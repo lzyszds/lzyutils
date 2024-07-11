@@ -1,5 +1,12 @@
 import { ElNotification, dayjs } from 'element-plus'
-import { formatFileSize, fileSizeToBytes, compressPic, getResourceFiles, getFileExtension } from './handleFile.js'
+import {
+  formatFileSize,
+  fileSizeToBytes,
+  compressPic,
+  getResourceFiles,
+  getFileExtension,
+  imageLoader
+} from './handleFile.js'
 import handleString from './handleString.js';
 
 
@@ -306,6 +313,7 @@ export default {
   compressPic, // 上传图片，图片太大，如何在前端实现图片压缩后上传
   getResourceFiles, // 获取文件夹下资源文件(指定类型)
   getFileExtension, // 获取文件扩展名
+  imageLoader, // 图片加载器 (实现图片缓存)
 
   /* 字符串处理集合 */
   handleString, // 字符串处理
