@@ -6,8 +6,8 @@ import {
   getResourceFiles,
   getFileExtension,
   imageLoader
-} from './handleFile.js'
-import handleString from './handleString.js';
+} from './handleFiles'
+import handleString from './handleString';
 
 
 // 此函数获取一个数组并将其拆分为更小的块
